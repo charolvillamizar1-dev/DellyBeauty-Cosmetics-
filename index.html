@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Permanente Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #FFF9F9; color: #4B5563; }
+        .pastel-pink { background-color: #F9A8D4; }
+        .tab-active { color: #F9A8D4; border-bottom: 2px solid #F9A8D4; }
+        .foto-placeholder { width: 100%; height: 180px; border-radius: 1.5rem; background: #fce7f3; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed #F9A8D4; }
+        .foto-preview { width: 100%; height: 100%; object-fit: cover; }
+    </style>
+</head>
+<body class="pb-24">
+
+    <div id="seccion-inventario">
+        <header class="bg-white p-6 shadow-sm rounded-b-[3rem] text-center">
+            <h1 class="text-2xl font-bold text-pink-400 leading-tight">Mi Stock de Revistas</h1>
+            <div class="mt-4 relative">
+                <input type="text" id="buscador" onkeyup="buscarProducto()" placeholder="Buscar por nombre o código..." 
+                    class="w-full p-3 pl-10 bg-pink-50 border-none rounded-2xl outline-none shadow-inner text-sm">
+                <span class="absolute left-3 top-3.5">🔍</span>
+            </div>
+        </header>
+        <main id="lista-productos" class="p-4 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"></main>
+    </div>
+
+    <div id="seccion-ajustes" class="hidden p-6">
+        <h2 class="text-2xl font-bold text-pink-400 mb-6 text-center">⚙️ Configuración</h2>
+        
+        <div class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-pink-50">
+            <h3 class="font-bold mb-4 text-gray-400 border-b pb-2 text-xs uppercase">Categorías (Perfume, Facial...)</h3>
+            <div id="lista-categorias-ajustes" class="space-y-2 mb-4"></div>
+            <div class="flex gap-2">
+                <input type="text" id="nueva-categoria" placeholder="Nueva sección..." class="flex-1 p-2 bg-gray-50 rounded-xl outline-none border border-pink-100 text-sm">
+                <button onclick="agregarAjuste('categoria')" class="bg-emerald-100 px-4 py-2 rounded-xl text-emerald-700 font-bold">+</button>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-pink-50">
+            <h3 class="font-bold mb-4 text-gray-400 border-b pb-2 text-xs uppercase">Marcas (Avon, Natura...)</h3>
+            <div id="lista-marcas-ajustes" class="space-y-2 mb-4"></div>
+            <div class="flex gap-2">
+                <input type="text" id="nueva-marca" placeholder="Nueva marca..." class="flex-1 p-2 bg-gray-50 rounded-xl outline-none border border-pink-100 text-sm">
+                <button onclick="agregarAjuste('marca')" class="bg-emerald-100 px-4 py-2 rounded-xl text-emerald-700 font-bold">+</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md p-6 rounded-[2.5rem] max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h2 id="modal-titulo" class="text-xl font-bold text-pink-400 mb-4 text-center tracking-tight">Datos del Producto</h2>
+            <input type="hidden" id="editando-id">
+            
+            <div class="space-y-4 text-sm">
+                <div class="foto-placeholder cursor-pointer" onclick="document.getElementById('input-foto').click()">
+                    <span id="txt-foto" class="text-pink-300 font-semibold">📸 Toca para subir foto</span>
+                    <img id="img-preview" class="foto-preview hidden">
+                </div>
+                <input type="file" id="input-foto" accept="image/*" class="hidden" onchange="procesarFoto(event)">
+
+                <input type="text" id="form-nombre" placeholder="Nombre completo" class="w-full p-3 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
+                
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-[10px] ml-2 text-gray-400 font-bold">CANTIDAD EN STOCK</label>
+                        <input type="number" id="form-cantidad" value="1" min="1" class="w-full p-3 bg-pink-50 font-bold text-pink-600 rounded-2xl border-none outline-none">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] ml-2 text-gray-400 font-bold">CÓDIGO</label>
+                        <input type="text" id="form-codigo" placeholder="Ej: 1234" class="w-full p-3 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <select id="form-marca" class="flex-1 p-3 bg-gray-50 rounded-2xl border border-gray-100 outline-none"></select>
+                    <select id="form-categoria" class="flex-1 p-3 bg-gray-50 rounded-2xl border border-gray-100 outline-none"></select>
+                </div>
+
+                <select id="form-tipo" class="w-full p-3 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
+                    <option>Producto Original</option>
+                    <option>Repuesto / Refill</option>
+                </select>
+
+                <textarea id="form-vencimientos" rows="2" placeholder="Fechas de vencimiento (Ej: 2025-10-30, 2026-04-12)" class="w-full p-3 bg-gray-50 rounded-2xl border border-gray-100 outline-none"></textarea>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="cerrarModal()" class="flex-1 p-3 rounded-2xl bg-gray-100 font-bold text-gray-400">Cerrar</button>
+                <button onclick="guardarProducto()" class="flex-1 p-3 rounded-2xl pastel-pink text-white font-bold shadow-lg shadow-pink-200">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 w-full bg-white border-t border-pink-50 p-4 flex justify-around items-center shadow-2xl z-40">
+        <button onclick="mostrarSeccion('inventario')" id="nav-inv" class="tab-active flex flex-col items-center">
+            <span class="text-xl">🏠</span><span class="text-[10px] font-bold">Inventario</span>
+        </button>
+        <button onclick="abrirModal()" class="pastel-pink text-white w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-lg -mt-12 border-4 border-[#FFF9F9]">+</button>
+        <button onclick="mostrarSeccion('ajustes')" id="nav-ajust" class="text-gray-300 flex flex-col items-center">
+            <span class="text-xl">⚙️</span><span class="text-[10px] font-bold">Ajustes</span>
+        </button>
+    </nav>
+
+    <script>
+        // CARGA DE DATOS PERMANENTE
+        let categorias = JSON.parse(localStorage.getItem('mis_categorias_v2')) || ["Perfume", "Cuidado Facial", "Cuidado Capilar", "Maquillaje", "Hogar"];
+        let marcas = JSON.parse(localStorage.getItem('mis_marcas_v2')) || ["Yanbal", "Avon", "Natura"];
+        let productos = JSON.parse(localStorage.getItem('mi_inventario_v2')) || [];
+        let fotoActual = "";
+
+        function persistir() {
+            localStorage.setItem('mi_inventario_v2', JSON.stringify(productos));
+            localStorage.setItem('mis_categorias_v2', JSON.stringify(categorias));
+            localStorage.setItem('mis_marcas_v2', JSON.stringify(marcas));
+        }
+
+        function procesarFoto(e) {
+            const f = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                fotoActual = ev.target.result;
+                const img = document.getElementById('img-preview');
+                img.src = fotoActual; img.classList.remove('hidden');
+                document.getElementById('txt-foto').classList.add('hidden');
+            };
+            if(f) reader.readAsDataURL(f);
+        }
+
+        function renderizarProductos(lista = productos) {
+            const cont = document.getElementById('lista-productos');
+            cont.innerHTML = '';
+            lista.forEach(p => {
+                let vHTML = p.vencimientos.map(f => {
+                    const dias = Math.floor((new Date(f) - new Date()) / 86400000);
+                    const alert = dias < 90;
+                    return `<div class="p-2 rounded-xl text-[9px] mb-1 flex justify-between ${alert?'bg-orange-100 text-orange-700 font-bold':'bg-green-50 text-green-700'}"><span>📅 ${f}</span><span>${alert?'¡PRONTO!':'OK'}</span></div>`;
+                }).join('');
+                cont.innerHTML += `
+                    <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-pink-50 relative overflow-hidden">
+                        ${p.foto ? `<img src="${p.foto}" class="w-full h-36 object-cover rounded-2xl mb-3 shadow-inner">` : ''}
+                        <div class="flex justify-between items-start">
+                            <span class="text-[9px] bg-pink-100 text-pink-500 px-2 py-0.5 rounded-full font-bold uppercase">${p.categoria}</span>
+                            <div class="flex gap-2">
+                                <button onclick="editarProducto(${p.id})" class="text-blue-300 text-lg">✏️</button>
+                                <button onclick="eliminarProducto(${p.id})" class="text-red-200 text-lg">🗑️</button>
+                            </div>
+                        </div>
+                        <h3 class="font-bold text-gray-700 mt-1 leading-tight text-lg">${p.nombre}</h3>
+                        <div class="flex justify-between items-center my-2">
+                             <p class="text-[10px] text-gray-400 font-bold uppercase">${p.marca} • Cód: ${p.codigo}</p>
+                             <span class="bg-pink-400 text-white px-3 py-1 rounded-full text-[10px] font-bold">STOCK: ${p.cantidad || 1}</span>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded-2xl mb-1"><p class="text-[9px] font-bold text-gray-400 mb-1 uppercase tracking-tighter">Vencimientos Registrados:</p>${vHTML}</div>
+                    </div>`;
+            });
+        }
+
+        function guardarProducto() {
+            const id = document.getElementById('editando-id').value;
+            const data = {
+                id: id ? parseInt(id) : Date.now(),
+                foto: fotoActual,
+                nombre: document.getElementById('form-nombre').value,
+                cantidad: document.getElementById('form-cantidad').value,
+                codigo: document.getElementById('form-codigo').value,
+                marca: document.getElementById('form-marca').value,
+                tipo: document.getElementById('form-tipo').value,
+                categoria: document.getElementById('form-categoria').value,
+                vencimientos: document.getElementById('form-vencimientos').value.split(',').map(f => f.trim()).filter(f => f !== "")
+            };
+            if(id) productos = productos.map(p => p.id === parseInt(id) ? data : p);
+            else productos.push(data);
+            persistir(); renderizarProductos(); cerrarModal();
+        }
+
+        function editarProducto(id) {
+            const p = productos.find(x => x.id === id);
+            abrirModal(true);
+            document.getElementById('editando-id').value = p.id;
+            document.getElementById('form-nombre').value = p.nombre;
+            document.getElementById('form-cantidad').value = p.cantidad || 1;
+            document.getElementById('form-codigo').value = p.codigo;
+            document.getElementById('form-marca').value = p.marca;
+            document.getElementById('form-tipo').value = p.tipo;
+            document.getElementById('form-categoria').value = p.categoria;
+            document.getElementById('form-vencimientos').value = p.vencimientos.join(', ');
+            if(p.foto) {
+                fotoActual = p.foto;
+                document.getElementById('img-preview').src = p.foto;
+                document.getElementById('img-preview').classList.remove('hidden');
+                document.getElementById('txt-foto').classList.add('hidden');
+            }
+        }
+
+        function abrirModal(edit = false) {
+            renderizarAjustes();
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('modal-titulo').innerText = edit ? "✏️ Editar Producto" : "✨ Nuevo Producto";
+            if(!edit) {
+                document.getElementById('editando-id').value = "";
+                document.getElementById('form-nombre').value = "";
+                document.getElementById('form-cantidad').value = 1;
+                document.getElementById('form-vencimientos').value = "";
+                document.getElementById('img-preview').classList.add('hidden');
+                document.getElementById('txt-foto').classList.remove('hidden');
+                fotoActual = "";
+            }
+        }
+
+        function renderizarAjustes() {
+            document.getElementById('lista-categorias-ajustes').innerHTML = categorias.map(c => `<div class="flex justify-between text-sm p-2 bg-pink-50/50 rounded-lg"><span>${c}</span><button onclick="categorias=categorias.filter(x=>x!=='${c}');persistir();renderizarAjustes()" class="text-red-300">✕</button></div>`).join('');
+            document.getElementById('lista-marcas-ajustes').innerHTML = marcas.map(m => `<div class="flex justify-between text-sm p-2 bg-pink-50/50 rounded-lg"><span>${m}</span><button onclick="marcas=marcas.filter(x=>x!=='${m}');persistir();renderizarAjustes()" class="text-red-300">✕</button></div>`).join('');
+            document.getElementById('form-marca').innerHTML = marcas.map(m => `<option>${m}</option>`).join('');
+            document.getElementById('form-categoria').innerHTML = categorias.map(c => `<option>${c}</option>`).join('');
+        }
+
+        function agregarAjuste(tipo) {
+            const input = tipo === 'categoria' ? 'nueva-categoria' : 'nueva-marca';
+            const val = document.getElementById(input).value;
+            if(val) {
+                if(tipo === 'categoria') categorias.push(val); else marcas.push(val);
+                persistir(); renderizarAjustes(); document.getElementById(input).value = '';
+            }
+        }
+
+        function mostrarSeccion(s) {
+            document.getElementById('seccion-inventario').classList.toggle('hidden', s !== 'inventario');
+            document.getElementById('seccion-ajustes').classList.toggle('hidden', s !== 'ajustes');
+            document.getElementById('nav-inv').className = s === 'inventario' ? 'tab-active flex flex-col items-center' : 'text-gray-300 flex flex-col items-center';
+            document.getElementById('nav-ajust').className = s === 'ajustes' ? 'tab-active flex flex-col items-center' : 'text-gray-300 flex flex-col items-center';
+        }
+
+        function cerrarModal() { document.getElementById('modal').classList.add('hidden'); }
+        function eliminarProducto(id) { if(confirm('¿Segura que quieres borrarlo?')){productos = productos.filter(p=>p.id!==id); persistir(); renderizarProductos();} }
+        function buscarProducto() { const t = document.getElementById('buscador').value.toLowerCase(); renderizarProductos(productos.filter(p => p.nombre.toLowerCase().includes(t) || p.codigo.includes(t))); }
+
+        renderizarProductos();
+    </script>
+</body>
+</html>
